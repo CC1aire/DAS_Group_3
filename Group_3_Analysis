@@ -1,1 +1,20 @@
+#total number of pre-school children in a given IZ per year
+sum1998 <- sum(data15$N[data15$Year=="1998"])
+sum2000 <- sum(data15$N[data15$Year=="2000"])
+sum2002 <- sum(data15$N[data15$Year=="2002"])
+sum2004 <- sum(data15$N[data15$Year=="2004"])
+sum2008 <- sum(data15$N[data15$Year=="2008"])
+sum2010 <- sum(data15$N[data15$Year=="2010"])
+sum2012 <- sum(data15$N[data15$Year=="2012"])
+#number of pre-school children susceptible to measles per year
+m1998 <- sum(data15$Y[data15$Year=="1998"])
+m2000 <- sum(data15$Y[data15$Year=="2000"])
+m2002 <- sum(data15$Y[data15$Year=="2002"])
+m2004 <- sum(data15$Y[data15$Year=="2004"])
+m2008 <- sum(data15$Y[data15$Year=="2008"])
+m2010 <- sum(data15$Y[data15$Year=="2010"])
+m2012 <- sum(data15$Y[data15$Year=="2012"])
 
+year_sum <- c(sum1998,sum2000,sum2002,sum2004,sum2008,sum2010,sum2012) 
+year_measles <- c(m1998,m2000,m2002,m2004,m2008,m2010,m2012)
+year_prop <- year_measles/year_sum
