@@ -1,1 +1,56 @@
+data15 <- read.csv("DaProject15.csv", header=TRUE)
 
+summary_stats <- summary(data15)
+
+missing_values <- colSums(is.na(data15))
+complete_values <- colSums(!is.na(data15))
+
+library(tidyverse)
+
+summary_data15 <- data15 %>%
+  group_by(Year) %>%
+  summarize(N = sum(N), Y = sum(Y))
+
+
+summary(summary_data15)
+
+Summary_data_15 <- data.frame(
+  variable = c("Susceptible to measles","Total number of children"),
+  Mean = c(mean(summary_data15$Y), mean(summary_data15$N)),
+  SD = c(sd(summary_data15$Y),sd(summary_data15$N)),
+  Min = c(min(summary_data15$Y),min(summary_data15$N)),
+  Q1 = c(quantile(summary_data15$Y,0.25),quantile(summary_data15$N,0.25)),
+  Median = c(median(summary_data15$Y),median(summary_data15$N)),
+  Q3 = c(quantile(summary_data15$Y,0.75),quantile(summary_data15$N,0.75)),
+  Max = c(max(summary_data15$Y),max(summary_data15$N))
+)
+
+library(gt)
+
+summary_table <- gt(Summary_data_15) %>%
+  tab_header(
+    title = "Table 1: Summary statistics on measles susceptability and total number of children" ) %>%
+  cols_label(
+    Mean = "Mean",
+    SD = "Standard Deviation",
+    Min = "Min",
+    Q1 = "1st Q.",
+    Median = "Median",
+    Q3 = "3rd Q.",
+    Max = "Max"
+  )
+summary_table
+
+library(moderndive)
+data15 %>%
+  get_correlation(formula = N ~ Y)
+
+summary_data15 %>%
+  get_correlation(formula = N ~ Y)
+
+?plot
+
+ggplot(summary_data15, aes(x = Year, y = Y/N)) +
+  geom_col() +
+  labs(x="Year", y="Proportion of kids suseptible to measles")+ 
+  ggtitle("Proportion of kids suseptible to measles for each year")
