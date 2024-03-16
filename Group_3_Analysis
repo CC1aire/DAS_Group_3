@@ -1,1 +1,55 @@
+modelN1 <- linear_reg() |>
+  fit(N ~ Year, data = data15)
+modelN$fit
+tidy(modelN1)
 
+ggplot(data15, aes(x = Year, y = N)) +
+  geom_point() +
+  labs(x = "Year", y = "Number of pre-school children in a given IZ", 
+       title = "The total number of pre-school children in a given IZ for each year") +
+  geom_smooth(method = "lm", se = FALSE)
+
+regression.points1 <- get_regression_points(modelN1$fit)
+regression.points
+
+ggplot(regression.points1, aes(x = Year, y = residual)) +
+  geom_point() +
+  labs(x = "Year", y = "Residual") +
+  geom_hline(yintercept = 0, col = "blue", linewidth = 1)
+
+ggplot(regression.points1, aes(x = residual)) +
+  geom_histogram(binwidth = 10, color = "white") +
+  labs(x = "Residual")
+
+qqnorm(data15$N)
+qqline(data15$N, col='blue')
+
+data15$p <- data15$Y/data15$N
+
+summary <- data15|>
+  summarize(median = median(p), mean = mean(p),.by = Year)
+
+ggplot(data15, aes(x = Year, y = p)) +
+  geom_point() +
+  labs(x = "Year", y = "Proportion of kids suseptible to measles", 
+       title = "Proportion of kids suseptible to measles for each year")+
+  geom_smooth(method = "lm", se = FALSE)
+
+modelp <- linear_reg() |>
+  fit(p ~ Year, data = data15)
+modelp$fit
+tidy(modelp)
+
+regression_points <- get_regression_points(modelp$fit)
+
+ggplot(regression_points, aes(x = Year, y = residual)) +
+  geom_jitter(width = 0.1) + 
+  labs(x = "Year", y = "Residual") +
+  geom_hline(yintercept = 0, col = "blue")
+
+ggplot(regression_points, aes(x = residual)) +
+  geom_histogram(binwidth = 0.01, color = "white") +
+  labs(x = "Residual")
+
+qqnorm(data15$p)
+qqline(data15$p, col='blue')
