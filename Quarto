@@ -1,0 +1,114 @@
+---
+title: "Measles susceptibility in Glasgow"
+author: ""
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(ggplot2)
+library(tidyverse)
+library(tidymodels)
+library(gt)
+library(MASS)
+library(patchwork)
+library(moderndive)
+
+```
+
+# Introduction {#sec-intro}
+
+We are interested in the measles, mumps and rubella (MMR) vaccination uptake for children in Scotland. This occurs at 12-13 months old and at 4-5 years old. The data is collected by the Scottish Childhood Immunisation Record System (SCIRS) who hold all the vaccination records for all children in Scotland. We are interested in data collected between 1998- when Wakefield et al. (1998) claimed a link between the vaccine and increased risk of autism- and 2013 where there were large outbreaks of measles in the UK. This article by Wakefield et al. (1998) was partially retractedin 2004 and then fully discredited in 2010 after no increased risk of autism was found.
+
+Our particular study focuses on measles susceptibility in the 133 intermediate zones in Glasgow. We are looking to investigate the following questions of interest:
+
+1.  Did Glasgow exhibit a change in measles susceptibility following the retraction of the Wakefield article?
+2.  Did the change, if any, in measles susceptibility occur in 2004 alongise the articles' retraction?
+
+```{r}
+#| echo: false
+
+Measles<-read.csv('~/Desktop/R/Data Analysis/Group Project /DAProject15.csv')
+
+```
+
+# Exploratory Analysis {#sec-EA}
+
+```{r}
+#| echo: false
+#| label: tbl-summary
+#| tbl-cap:  Proportions of children susceptible to measles, pre, during, and post 2004
+
+for (i in 1:nrow(Measles)) {
+  Measles$Proportion[i]<-sum(Measles$Y[i])/sum(Measles$N[i])
+}
+
+Measles.2004<-Measles|>
+  dplyr::filter(Year=='2004')
+s1<-summary(Measles.2004)
+
+Measles.pre2004<-Measles|>
+  dplyr::filter(Year=='1998'|Year=='2000'|Year=='2002')
+s2<-summary(Measles.pre2004)
+
+
+Measles.post2004<-Measles|>
+  dplyr::filter(Year=='2008'|Year=='2010'|Year=='2012')
+s3<-summary(Measles.post2004)
+
+gt(as.data.frame(cbind('Proportin pre 2004'=s2[,4],
+      'Proportin in 2004'=s1[,4],
+      'Proportin post 2004'=s3[,4])), 
+   caption = 'Proportions of children susceptible to measles, pre, during, and post 2004')
+
+
+```
+
+From the summaries in table 1 we can see that the mean proportion of children susceptible to measles increases from pre 2004 and peaks in 2004 where it then begins declining post 2004.
+
+```{r}
+#| echo: false
+#| label: fig-scat1
+#| message: false
+#| fig-align: center
+#| fig-cap: Measles susceptibility in Glasgow by year
+
+ggplot(data=Measles, aes(x=N, y=Y, color=Year))+
+  geom_jitter(size=1)+
+  labs(x='The total number of pre-school children in a given IZ', 
+       y='The number of pre-school children susceptible to measles in a given IZ',
+       title='Measles susceptibility in Glasgow by Year')+
+  geom_smooth(method='lm', se=FALSE, color='pink')
+  
+
+
+```
+
+From this scatter plot it is hard to distinguish any differences between the years. However, we can see that there is a moderate positive linear relationship between number of susceptible children and overall number of children. We must investigate each year separately to get a better idea.
+
+```{r}
+#| echo: false
+#| label: fig-box1
+#| message: false
+#| fig-align: center
+#| fig-cap: Summary of proportions of children susceptible to measles by year
+
+ggplot(data=Measles, aes(x=Year, group=Year, y=Proportion))+
+  geom_boxplot()+
+  labs(x='Year', 
+       y='Proportion of pre-school susceptible to measles', 
+       title = 'Summary of proportions of children susceptible to measles by year')
+```
+
+From this box plot we get a clearer idea of the data. We can see that there is an increase in the mean proportion of susceptibility to measles from 1998 up until 2004- at which point the study was partially retracted. Here we see a small decrease in the mean and see that there is more spread in the data for this year. We then have a gap in the data from 2004-2008 at which point the mean appears to have had a relatively large increase. We then see in 2010 a large decrease in the mean which comes after the study was fully discredited.
+
+# Formal Analysis {#sec-FA}
+
+# Conclusions {#sec-con}
