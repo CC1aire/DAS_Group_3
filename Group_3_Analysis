@@ -1,3 +1,4 @@
+#formal analysis
 modelN1 <- linear_reg() |>
   fit(N ~ Year, data = data15)
 modelN$fit
