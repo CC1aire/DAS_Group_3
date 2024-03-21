@@ -1,0 +1,214 @@
+---
+title: "Measles susceptibility in Glasgow"
+author: ""
+number-sections: true
+format: 
+  html:
+    embed-resources: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+library(ggplot2)
+library(tidyverse)
+library(tidymodels)
+library(gt)
+library(MASS)
+library(patchwork)
+library(moderndive)
+
+```
+
+# Introduction {#sec-intro}
+
+We are interested in the measles, mumps, and rubella (MMR) vaccination uptake for children in Scotland. This occurs at 12-13 months old and at 4-5 years old. The data is collected by the Scottish Childhood Immunisation Record System (SCIRS) who hold all the vaccination records for all children in Scotland. We are interested in data collected between 1998- when Wakefield et al. (1998) claimed a link between the vaccine and increased risk of autism- and 2013 where there were large outbreaks of measles in the UK. This article by Wakefield et al. (1998) was partially retractedin 2004 and then fully discredited in 2010 after no increased risk of autism was found.
+
+Our particular study focuses on measles susceptibility in the 133 intermediate zones in Glasgow. We are looking to investigate the following questions of interest:
+
+1.  Did Glasgow exhibit a change in measles susceptibility following the retraction of the Wakefield article?
+2.  Did the change, if any, in measles susceptibility occur in 2004 alongise the articles' retraction?
+
+```{r}
+#| echo: false
+
+Measles<-read.csv('~/Desktop/R/Data Analysis/Group Project /DAProject15.csv')
+```
+
+# Exploratory Analysis {#sec-EA}
+
+```{r}
+#| echo: false
+#| label: tbl-summary
+#| tbl-cap:  Proportions of children susceptible to measles, pre, during, and post 2004
+
+for (i in 1:nrow(Measles)) {
+  Measles$Proportion[i]<-sum(Measles$Y[i])/sum(Measles$N[i])
+}
+
+Measles.2004<-Measles|>
+  dplyr::filter(Year=='2004')
+s1<-summary(Measles.2004)
+
+Measles.pre2004<-Measles|>
+  dplyr::filter(Year=='1998'|Year=='2000'|Year=='2002')
+s2<-summary(Measles.pre2004)
+
+
+Measles.post2004<-Measles|>
+  dplyr::filter(Year=='2008'|Year=='2010'|Year=='2012')
+s3<-summary(Measles.post2004)
+
+gt(as.data.frame(cbind('Proportin pre 2004'=s2[,4],
+      'Proportin in 2004'=s1[,4],
+      'Proportin post 2004'=s3[,4])), 
+   caption = 'Proportions of children susceptible to measles, pre, during, and post 2004')
+
+
+```
+
+From the summaries in table 1 we can see that the mean proportion of children susceptible to measles increases from pre 2004 and peaks in 2004 where it then begins declining post 2004.
+
+```{r}
+#| echo: false
+#| label: fig-scat1
+#| message: false
+#| fig-align: center
+#| fig-cap: Measles susceptibility in Glasgow by year
+
+ggplot(data=Measles, aes(x=N, y=Y, color=Year))+
+  geom_jitter(size=1)+
+  labs(x='The total number of pre-school children in a given IZ', 
+       y='The number of pre-school children susceptible to measles in a given IZ',
+       title='Measles susceptibility in Glasgow by Year')+
+  geom_smooth(method='lm', se=FALSE, color='pink')
+
+
+
+```
+
+From this scatter plot it is hard to distinguish any differences between the years. However, we can see that there is a moderate positive linear relationship between number of susceptible children and overall number of children. We must investigate each year separately to get a better idea.
+
+```{r}
+#| echo: false
+#| label: fig-box1
+#| message: false
+#| fig-align: center
+#| fig-cap: Summary of proportions of children susceptible to measles by year
+
+ggplot(data=Measles, aes(x=Year, group=Year, y=Proportion))+
+  geom_boxplot()+
+  labs(x='Year', 
+       y='Proportion of pre-school susceptible to measles', 
+       title = 'Summary of proportions of children susceptible to measles by year')
+```
+
+From this box plot we get a clearer idea of the data. We can see that there is an increase in the mean proportion of susceptibility to measles from 1998 up until 2004- at which point the study was partially retracted. Here we see a small decrease in the mean and see that there is more spread in the data for this year. We then have a gap in the data from 2004-2008 at which point the mean appears to have had a relatively large increase. We then see in 2010 a large decrease in the mean which comes after the study was fully discredited.
+
+# Formal Analysis {#sec-FA}
+
+## Model of total number of pre-school children in a given IZ
+
+The table below shows the fitted model of simple linear regression with one categorical variable with total number of pre-school children in a given IZ as the response variable and different years as the explanatory variable. We can obtain a model which looks like: Expected value of total number of pre-school children in a given IZ=97.4135+each year‘s difference in the mean number compare to 1998\*indicator function of each year (0/1).
+
+```{r}
+#| echo: false
+#| label: tableofN
+#| message: false
+#| fig-align: center
+#| fig-cap: Fitted model of N
+data15$Year <- as.factor(data15$Year)
+modelN <- linear_reg() |>
+  fit(N ~ Year, data = data15)
+tidy(modelN)
+```
+
+To check the deterministic part of the model captures all the non-random structure in the data also known as whether if the residuals have mean zero or not. We plot the residuals (residuals) against the explanatory variable (year). In our model we jittered the points for each year to see the residuals for each year more clearly and then we can make conclusions from the graph. From the graph below we could see that there is an even spread of the residuals above and below the zero line for each year and all the residuals are randomly scattered. Thus, our assumption that the residuals have mean zero appears valid. For the next assumption we check the scale of the variability of the residuals is constant at all values of the explanatory variables which is known as homoscedasticity. For our chosen model we can directly get the result from the same graph we used for checking assumption one. Homoscedasticity is valid as the residuals shown as even spread across each year.
+
+```{r}
+#| echo: false
+#| label: Yearvsresidual_N
+#| message: false
+#| fig-align: center
+#| fig-cap: Plot of residual vs Year
+regression_points <- get_regression_points(modelN$fit)
+
+ggplot(regression_points, aes(x = Year, y = residual)) +
+  geom_jitter(width = 0.1) + 
+  labs(x = "Year", y = "Residual") +
+  geom_hline(yintercept = 0, col = "blue")
+
+```
+
+To check the third assumption that the residuals are normally distributed we plot a histogram of the residuals. We can determine that the histogram is bell-shaped and centered at zero. Although it’s a little bit of right skewed, we can still make the statement of normally distributed random errors appears valid in our model as the histogram is relatively symmetrical and bell-shaped.
+
+```{r}
+#| echo: false
+#| label: hist_N
+#| message: false
+#| fig-align: center
+#| fig-cap: histogram of residual_N
+
+ggplot(regression_points, aes(x = residual)) +
+  geom_histogram(binwidth = 10, color = "white") +
+  labs(x = "Residual")
+```
+
+The independence of the residuals shows in the process of taking all the data. And we can also determine values of the explanatory variables are recorded without error based on the experimental process. As we checked for all the assumptions, we can state that simple linear regression with one categorical explanatory variable is a well-fitted model for our data.
+
+## Model of proportion of pre-school children susceptible to measles in a given IZ
+
+```{r}
+#| echo: false
+#| label: table_p
+#| message: false
+#| fig-align: center
+#| fig-cap: fitted model of proportion
+modelp <- linear_reg() |>
+  fit(p ~ Year, data = data15)
+tidy(modelp)
+```
+
+The table above shows the fitted model of simple linear regression with one categorical variable with proportion of pre-school children susceptible to measles in a given IZ (The number of pre-school children susceptible to measles in a give divided by the total number of pre-school children in a given IZ) as the response variable and different year as the explanatory variable. We get a model in the form of: Expected value of proportion of pre-school children susceptible to measles in a given IZ =0.0488+each year’s difference in the mean proportion compare to 1998\*indicator function of each year (0/1).
+
+```{r}
+#| echo: false
+#| label: residual_p
+#| message: false
+#| fig-align: center
+#| fig-cap: year vs residual_p
+regressionppoints <- get_regression_points(modelp$fit)
+
+ggplot(regressionppoints, aes(x = Year, y = residual)) +
+  geom_jitter(width = 0.1) + 
+  labs(x = "Year", y = "Residual") +
+  geom_hline(yintercept = 0, col = "blue")
+```
+
+Our assumption of the residuals have mean zero appears valid as from the graph above we could see that the residuals evenly spread above and below the zero line for each year and all the residuals are randomly scattered. There is an outlier observed for 2000 with a large positive residual relating to 1998. Also, homoscedasticity is valid as the residuals shown as even spread across each year.
+
+```{r}
+#| echo: false
+#| label: hist_p
+#| message: false
+#| fig-align: center
+#| fig-cap: histogram of residual_p
+ggplot(regressionppoints, aes(x = residual)) +
+  geom_histogram(binwidth = 0.01, color = "white") +
+  labs(x = "Residual")
+```
+
+The histogram shows that graph is a little bit of right skewed, we can still make the statement of normally distributed random errors appears valid in our model as the histogram is relatively symmetrical and bell-shaped which has a center located at zero. The other two assumptions justified on the basis of the experimental context and state as truth. Then simple linear regression with one categorical explanatory variable is a well fitted model.
+
+## About the question
+
+From looking at the boxplots we produced at the beginning, we have discovered the proportion of measles susceptivity above we know that our observation doesn’t follow the retraction of the Wakefield article as it doesn’t give a big dropping before 2004 which is the year of retraction and an increase after 2004. If we focus on any change that occurred after 2004, we should notice that although the total number of pre-school children in a given IZ slightly increased after 2004, the proportion of measles susceptivity decreased at the same time which is actually against the influence of the retraction of the Wakefield article.
+
+# Conclusions {#sec-con}
+
+In conclusion, we have built two simple linear regressions with one categorical variable based on our analysis of interested number of children taking IZ and the proportion of them getting measles after that and determined that these are the fitted ones. Thus, we conclude that there were not any changes following the retraction of the article and there will not be any change like the prediction of the influence of retraction in the future.
+
+But the proportion of children getting measles would have been time delayed as it takes a while for people to find out the sign of disease. So there may still be some unexpected change compared to what we willing to find as the model predicted in the future.
